@@ -1,37 +1,52 @@
 import React from 'react';
-const WebSocket = require('ws');
 
 class WebsocketTest extends React.Component {
 
   constructor(props) {
     super(props);
     this.state = {
-      count: 90
+      messages: [],
+      ws: null,
+      msg: "bamboleo"
     };
   }
 
-  componentWillMount(props) {
-    const ws = new WebSocket('ws://localhost:8088/', {
-      perMessageDeflate: false
-    });
+  componentDidMount(props) {
+    let ws = new WebSocket("ws://localhost:8088/echo");
+    ws.onopen = function (evt) {
+      console.log("OPEN");
+    }
+    ws.onclose = function (evt) {
+      console.log("CLOSE");
+      ws = null;
+    }
+    ws.onmessage = (evt) => {
+      console.log("RESPONSE: " + evt.data);
+      this.setState({messages: [evt.data, ...this.state.messages]})
+    }
+    ws.onerror = function (evt) {
+      console.log("ERROR: " + evt.data);
+    }
 
-    ws.on('open', function open() {
-      ws.send('something');
-    });
+    this.setState({ws: ws})
+  }
 
-    ws.on('message', function incoming(data) {
-      console.log(data);
-    });
+  sendMessage = () => {
+    console.log(this.state)
+    this.state.ws.send(this.state.msg)
   }
   
   render() {
     return (
       <div>
         <div>
-          Count: 
-
+          <input onChange={e=>this.setState({msg: e.target.value})} placeholder="Your message" value={this.state.msg}/>
+          <button onClick={this.sendMessage}>Message</button>
+          {this.state.messages.map((msg, i) => {
+            return <p key={msg+i}>{msg}</p>
+          })
+          }
         </div>
-        <strong>{this.state.count}</strong>
       </div>
     );
   }
